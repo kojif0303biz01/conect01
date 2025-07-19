@@ -1,0 +1,119 @@
+{
+  "test_suite": "Azure OpenAI o3-pro Comprehensive Test",
+  "timestamp": "2025-07-19 18:33:02",
+  "api_version": "2025-04-01-preview",
+  "tests": [
+    {
+      "test_name": "基本推論テスト",
+      "status": "success",
+      "response": "方程式  x² + 5x + 6 = 0  を解きます。\n\n1. 係数を確認すると  \n   a = 1,  b = 5,  c = 6  です。\n\n2. 因数分解を試みます。  \n   x² + 5x + 6 を  \n   (x + 2)(x + 3) に分解できます。  \n   これは展開すると x² + 3x + 2x + 6 = x² + 5x + 6 になるので正しいです。\n\n3. よって  \n   (x + 2)(x + 3) = 0\n\n4. それぞれの因子を 0 とおくと  \n   x + 2 = 0  →  x = -2  \n   x + 3 = 0  →  x = -3\n\n答え：  \nx = -2,  -3",
+      "reasoning_summary": null,
+      "usage": {
+        "input_tokens": 28,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 283,
+        "output_tokens_details": {
+          "reasoning_tokens": 64
+        },
+        "total_tokens": 311
+      }
+    },
+    {
+      "test_name": "マルチモーダル推論テスト",
+      "status": "error",
+      "error": "Error code: 400 - {'error': {'message': 'Error while downloading [URL REDACTED].', 'type': 'invalid_request_error', 'param': 'url', 'code': 'invalid_value'}}"
+    },
+    {
+      "test_name": "複雑問題解決テスト",
+      "status": "success",
+      "response": "【問題の定式化】\n\n変数  \nxᵢⱼ ： 工場 i（i=A,B,C）から配送センター j（j=1,2,3,4）へ送る数量  \n（全部で 3×4 = 12 変数）\n\n目的関数（総輸送コストの最小化）\nmin  \n  4xA1 + 6xA2 + 8xA3 + 5xA4  \n+ 3xB1 + 4xB2 + 6xB3 + 7xB4  \n+ 5xC1 + 3xC2 + 4xC3 + 6xC4\n\n制約\n1) 供給（生産能力）  \nxA1 + xA2 + xA3 + xA4 = 100  \nxB1 + xB2 + xB3 + xB4 = 150  \nxC1 + xC2 + xC3 + xC4 = 120  \n\n2) 需要  \nxA1 + xB1 + xC1 =  80  \nxA2 + xB2 + xC2 =  90  \nxA3 + xB3 + xC3 = 110  \nxA4 + xB4 + xC4 =  90  \n\n3) 非負条件　xᵢⱼ ≥ 0  \n\n（総供給 370 = 総需要 370 なので等式でよい）\n\n【輸送シンプレックスでの最適解】\n\n以下の 6 本の変数が基本解となり、全ての縮減コスト（Δc）≧0 となるため最適。\n\n1. xA1 = 10  \n2. xA4 = 90  \n3. xB1 = 70  \n4. xB2 = 80  \n5. xC2 = 10  \n6. xC3 = 110  \n\nその他の xᵢⱼ は 0\n\n【配送計画】\n\n工場A  \n・センター1へ 10  \n・センター4へ 90  \n\n工場B  \n・センター1へ 70  \n・センター2へ 80  \n\n工場C  \n・センター2へ 10  \n・センター3へ 110  \n\n（確認）  \n供給：A 100、B 150、C 120  \n需要：1 80、2 90、3 110、4 90  \nすべて一致。\n\n【最小総コスト】\n\nA→1 : 10×4  =   40  \nA→4 : 90×5  =  450  \nB→1 : 70×3  =  210  \nB→2 : 80×4  =  320  \nC→2 : 10×3  =   30  \nC→3 :110×4  =  440  \n——————————————  \n合計　　　        1,490\n\nしたがって、総輸送コストを最小にする配送計画は上記のとおりで、最小総コストは 1,490（費用単位）となります。",
+      "reasoning_summary": null,
+      "usage": {
+        "input_tokens": 283,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 5182,
+        "output_tokens_details": {
+          "reasoning_tokens": 4480
+        },
+        "total_tokens": 5465
+      }
+    },
+    {
+      "test_name": "ストリーミングレスポンステスト",
+      "status": "success",
+      "response": "",
+      "streaming_duration": 51.77094507217407,
+      "response_length": 0
+    },
+    {
+      "test_name": "推論努力レベルテスト (low)",
+      "effort_level": "low",
+      "status": "success",
+      "response": "与えられた手掛かりを整理します。\n\n1. Aさんは赤い帽子を被っていない  \n2. Bさんは青い帽子を被っている  \n3. Cさんは緑か黄色の帽子を被っている  \n4. Dさんは白い帽子を被っていない  \n5. Eさんは赤い帽子を被っている  \n\nまず，色は５色（赤・青・緑・黄・白）が１つずつ使われることを念頭に置きます。\n\n手掛かり 2 と 5 から  \n・Bさん ＝ 青  \n・Eさん ＝ 赤  \n\n赤と青はすでに使われたので，残る色は「緑・黄・白」の３色です。\n\n手掛かり 1 より  \n・Aさん ≠ 赤 → 残る３色（緑・黄・白）のいずれか\n\n手掛かり 4 より  \n・Dさん ≠ 白 → 緑 か 黄\n\n手掛かり 3 より  \n・Cさん ＝ 緑 か 黄\n\nここで「白」をかぶれるのは Aさんしか残っていないため\n\n・Aさん ＝ 白  \n\nすると緑と黄が C さんと D さんに割り振られるだけになりますが，両者を区別できる追加情報はありません。  \nしたがって可能な組み合わせは次の２通りです。\n\nパターン1  \nA：白  \nB：青  \nC：緑  \nD：黄  \nE：赤  \n\nパターン2  \nA：白  \nB：青  \nC：黄  \nD：緑  \nE：赤  \n\n論理的に確定できるのは「A＝白，B＝青，E＝赤」であり，C と D の帽子色（緑と黄）は手掛かりだけでは一意に決まりません。",
+      "processing_time": 22.775310039520264,
+      "usage": {
+        "input_tokens": 141,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 695,
+        "output_tokens_details": {
+          "reasoning_tokens": 256
+        },
+        "total_tokens": 836
+      }
+    },
+    {
+      "test_name": "推論努力レベルテスト (medium)",
+      "effort_level": "medium",
+      "status": "success",
+      "response": "【手順】\n\n1. ヒント5より  \n   E ＝ 赤\n\n2. 帽子はすべて異色なので、赤は他の４人には使えない。\n\n3. ヒント2より  \n   B ＝ 青\n\n4. 残る色は「緑・黄・白」。\n\n5. ヒント3より  \n   C ＝ 緑 または 黄\n\n6. ヒント4より  \n   D ≠ 白  \n   よって「白」は A・C のどちらかになるが、C は緑か黄しかかぶれないので  \n   A ＝ 白 が確定。\n\n7. ここまでで決まった割り当て\n   A：白  \n   B：青  \n   E：赤  \n\n   残る色は「緑・黄」を C と D に一つずつ配るだけ。\n\n8. C が緑なら D は黄、C が黄なら D は緑。  \n   どちらもすべての条件を満たす。\n\n【結論】\n\n条件を満たす配色は次の２通りしかありません。\n\n解 1  \nA：白  \nB：青  \nC：緑  \nD：黄  \nE：赤  \n\n解 2  \nA：白  \nB：青  \nC：黄  \nD：緑  \nE：赤  \n\nしたがって、A・B・E の配色は一意に決まりますが、C と D の色は緑と黄を入れ替えた２通りの可能性が残ります。",
+      "processing_time": 52.18927717208862,
+      "usage": {
+        "input_tokens": 141,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 1507,
+        "output_tokens_details": {
+          "reasoning_tokens": 1152
+        },
+        "total_tokens": 1648
+      }
+    },
+    {
+      "test_name": "推論努力レベルテスト (high)",
+      "effort_level": "high",
+      "status": "success",
+      "response": "条件を整理すると\n\n1. A は赤以外  \n2. B は青  \n3. C は緑か黄  \n4. D は白以外  \n5. E は赤  \n6. ５人の帽子の色はすべて異なる  \n\nまず 5 より E が赤と確定し、赤は残りの４人には使えません。  \n2 から B は青と確定し、青も残りの３人には使えません。  \n\n残る色は｢緑・黄・白｣の３色で、A・C・D に割り当てます。\n\n• C は 3 から ｢緑または黄｣  \n• D は 4 から ｢白以外｣、すなわち ｢緑または黄｣  \n• A は 1 から ｢白・緑・黄｣ のいずれかだが 6 により C と D と違う色\n\nさらに D が白をかぶれないので、白は A に割り当てるしかありません。  \nすると残った緑と黄を C と D に振り分ければよいのですが、緑・黄のどちらを誰がかぶっても条件を満たします。\n\nしたがって可能な配色は 2 通りあります。\n\n①  \nA：白  \nB：青  \nC：緑  \nD：黄  \nE：赤  \n\n②  \nA：白  \nB：青  \nC：黄  \nD：緑  \nE：赤  \n\n論理的にはこの２通りが同等に成り立ち、他の組合せは存在しません。",
+      "processing_time": 45.74943995475769,
+      "usage": {
+        "input_tokens": 141,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 888,
+        "output_tokens_details": {
+          "reasoning_tokens": 512
+        },
+        "total_tokens": 1029
+      }
+    },
+    {
+      "test_name": "バックグラウンド処理テスト",
+      "status": "timeout",
+      "message": "Task did not complete within expected time",
+      "response_id": "resp_687b67b362b881a3b9efdd2dcc5a1d7d0546eaf711858871"
+    }
+  ],
+  "summary": {
+    "total_tests": 8,
+    "successful_tests": 6,
+    "failed_tests": 2,
+    "success_rate": "75.0%"
+  }
+}

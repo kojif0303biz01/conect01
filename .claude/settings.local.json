@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(venvScripts:*)",
+      "Bash(call:*)",
+      "Bash(powershell:*)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "Bash(python:*)",
+      "Bash(mkdir:*)",
+      "Bash(move:*)",
+      "Bash(mv:*)",
+      "Bash(cmd:*)",
+      "Bash(quick_move.bat)",
+      "Bash(git init:*)",
+      "Bash(git remote add:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": []
+  }
+}

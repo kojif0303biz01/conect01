@@ -1,0 +1,34 @@
+{
+  "test_suite": "Azure OpenAI o3-pro Comprehensive Test",
+  "timestamp": "2025-07-19 17:38:13",
+  "api_version": "2025-04-01-preview",
+  "tests": [
+    {
+      "test_name": "基本推論テスト",
+      "status": "error",
+      "error": "Error code: 400 - {'error': {'message': \"Invalid value: 'reasoning.summary'. Supported values are: 'file_search_call.results', 'web_search_call.results', 'message.input_image.image_url', 'computer_call_output.output.image_url', and 'reasoning.encrypted_content'.\", 'type': 'invalid_request_error', 'param': 'include[0]', 'code': 'invalid_value'}}"
+    },
+    {
+      "test_name": "マルチモーダル推論テスト",
+      "status": "error",
+      "error": "Error code: 400 - {'error': {'message': \"Invalid value: 'reasoning.summary'. Supported values are: 'file_search_call.results', 'web_search_call.results', 'message.input_image.image_url', 'computer_call_output.output.image_url', and 'reasoning.encrypted_content'.\", 'type': 'invalid_request_error', 'param': 'include[0]', 'code': 'invalid_value'}}"
+    },
+    {
+      "test_name": "複雑問題解決テスト",
+      "status": "error",
+      "error": "Responses.create() got an unexpected keyword argument 'max_completion_tokens'"
+    },
+    {
+      "test_name": "ストリーミングレスポンステスト",
+      "status": "success",
+      "response": "",
+      "streaming_duration": 57.07515788078308,
+      "response_length": 0
+    },
+    {
+      "test_name": "推論努力レベルテスト (low)",
+      "effort_level": "low",
+      "status": "success",
+      "response": "与えられた条件を順に整理します。\n\n1. A さんは赤ではない  \n2. B さんは青  \n3. C さんは緑または黄  \n4. D さんは白ではない  \n5. E さんは赤  \n\nまず確定できるものを決めます。\n\n• B = 青  \n• E = 赤  \n\n残る色は「緑・黄・白」の 3 つです。  \nA は赤でないのでこの 3 色のどれかです。  \nC は緑か黄、D は白以外ですから\n\n  • 白は C には使えない  \n  • 白は D にも使えない（D は白でない）\n\nしたがって、白は必ず A に割り当てられます。\n\n残った「緑・黄」を C と D に振り分ければよいのですが、\n\n• C は緑または黄（条件 3）  \n• D はどちらでもよい（白でなければよい）  \n\nということで、C と D の色はまだ一意には決まりません。  \n可能な割り当ては次の 2 通りだけです。\n\nケース 1  \nA = 白  \nB = 青  \nC = 緑  \nD = 黄  \nE = 赤  \n\nケース 2  \nA = 白  \nB = 青  \nC = 黄  \nD = 緑  \nE = 赤  \n\n以上がすべての条件を満たす解答です。",
+      "processing_time": 17.1309175491333,
+      "usage": 
