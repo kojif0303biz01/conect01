@@ -1,31 +1,10 @@
-# Azure AI and OpenAI packages
-azure-ai-inference>=1.0.0b9
+# o3-pro チャットボットツールキット 依存関係
+
+# Azure OpenAI接続
+openai>=1.5.0
+
+# Azure認証  
 azure-identity>=1.15.0
-openai>=1.68.0
 
-# Web framework
-fastapi>=0.109.0
-uvicorn>=0.27.0
-
-# HTTP client
-httpx>=0.26.0
-requests>=2.31.0
-
-# Environment variables
+# 設定管理
 python-dotenv>=1.0.0
-
-# Data processing
-pandas>=2.0.0
-numpy>=1.24.0
-
-# Testing
-pytest>=7.4.0
-pytest-asyncio>=0.21.0
-
-# Linting and formatting
-black>=23.0.0
-flake8>=6.0.0
-mypy>=1.5.0
-
-# Documentation
-pydantic>=2.0.0

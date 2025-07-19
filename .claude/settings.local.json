@@ -14,7 +14,13 @@
       "Bash(quick_move.bat)",
       "Bash(git init:*)",
       "Bash(git remote add:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(pip install:*)",
+      "Bash(source:*)",
+      "Bash(pip --version)",
+      "Bash(touch:*)",
+      "Bash(chmod:*)",
+      "Bash(find:*)"
     ],
     "deny": []
   }
