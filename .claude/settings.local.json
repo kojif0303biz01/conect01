@@ -21,7 +21,9 @@
       "Bash(touch:*)",
       "Bash(chmod:*)",
       "Bash(find:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(git push:*)",
+      "Bash(rg:*)"
     ],
     "deny": []
   }

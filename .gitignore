@@ -76,4 +76,6 @@ dmypy.json
 *.tmp
 *.temp
 temp/
-tmp/
+tmp/.env.chatbot.org
+.env.cosmos
+azure_templates/bicep/deployment_outputs.json

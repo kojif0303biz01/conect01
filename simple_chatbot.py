@@ -22,7 +22,141 @@ sys.path.insert(0, str(project_root))
 
 from core.azure_auth import O3ProConfig, O3ProClient
 from handlers import ReasoningHandler, StreamingHandler, BackgroundHandler
-from chat_history import ChatHistoryManager
+from chat_history.local_history import ChatHistoryManager
+
+# Cosmos DB統合
+try:
+    from cosmos_history.config import load_config_from_env
+    from cosmos_history.cosmos_client import CosmosDBClient
+    from cosmos_history.cosmos_history_manager import CosmosHistoryManager
+    COSMOS_AVAILABLE = True
+except ImportError:
+    COSMOS_AVAILABLE = False
+
+
+class HistoryManagerWrapper:
+    """Cosmos DB と ローカル履歴管理の統一インターフェース"""
+    
+    def __init__(self, manager, is_cosmos=False):
+        self.manager = manager
+        self.is_cosmos = is_cosmos
+        self.session_mapping = {}  # Cosmos DB用のセッションID変換
+    
+    def start_new_session(self, mode: str, title: str):
+        """新セッション開始"""
+        if self.is_cosmos:
+            import asyncio
+            import uuid
+            
+            # 会話を作成
+            conversation_title = f"{title} ({mode})"
+            
+            # 非同期関数を同期実行
+            async def create_conv():
+                return await self.manager.create_conversation(
+                    title=conversation_title,
+                    creator_user_id="chatbot_user"
+                )
+            
+            try:
+                conversation = asyncio.run(create_conv())
+                session_id = str(uuid.uuid4())
+                self.session_mapping[session_id] = conversation.conversation_id
+                return session_id
+            except Exception as e:
+                print(f"⚠️ Cosmos DB会話作成エラー: {e}")
+                return None
+        else:
+            return self.manager.start_new_session(mode, title)
+    
+    def add_message(self, session_id: str, role: str, content: str, metadata=None):
+        """メッセージ追加"""
+        if self.is_cosmos:
+            import asyncio
+            
+            # セッションIDから会話IDを取得
+            conversation_id = self.session_mapping.get(session_id)
+            if not conversation_id:
+                print(f"⚠️ セッションID {session_id} が見つかりません")
+                return
+            
+            # 非同期関数を同期実行
+            async def add_msg():
+                if role == "user":
+                    return await self.manager.add_message(
+                        conversation_id=conversation_id,
+                        sender_user_id="chatbot_user",
+                        sender_display_name="ユーザー",
+                        content=content
+                    )
+                else:  # assistant
+                    return await self.manager.add_message(
+                        conversation_id=conversation_id,
+                        sender_user_id="assistant",
+                        sender_display_name="o3-pro",
+                        content=content
+                    )
+            
+            try:
+                asyncio.run(add_msg())
+            except Exception as e:
+                print(f"⚠️ Cosmos DBメッセージ追加エラー: {e}")
+        else:
+            self.manager.add_message(session_id, role, content, metadata)
+    
+    def get_session_info(self, session_id: str):
+        """セッション情報取得"""
+        if self.is_cosmos:
+            import asyncio
+            
+            conversation_id = self.session_mapping.get(session_id)
+            if not conversation_id:
+                return None
+            
+            async def get_conv():
+                return await self.manager.get_conversation(conversation_id)
+            
+            try:
+                conversation = asyncio.run(get_conv())
+                if conversation:
+                    return {
+                        'title': conversation.title,
+                        'message_count': len(conversation.participants)  # 簡易表示
+                    }
+            except Exception as e:
+                print(f"⚠️ Cosmos DB会話情報取得エラー: {e}")
+            return None
+        else:
+            return self.manager.get_session_info(session_id)
+    
+    def get_session_messages(self, session_id: str):
+        """セッションメッセージ取得"""
+        if self.is_cosmos:
+            import asyncio
+            
+            conversation_id = self.session_mapping.get(session_id)
+            if not conversation_id:
+                return []
+            
+            async def get_msgs():
+                return await self.manager.get_conversation_messages(conversation_id)
+            
+            try:
+                messages = asyncio.run(get_msgs())
+                # ローカル形式に変換
+                converted = []
+                for msg in messages:
+                    converted.append({
+                        'role': 'user' if msg.sender.user_id == 'chatbot_user' else 'assistant',
+                        'content': msg.content.text or msg.content.display_text,
+                        'timestamp': msg.timestamp
+                    })
+                return converted
+            except Exception as e:
+                print(f"⚠️ Cosmos DBメッセージ取得エラー: {e}")
+            return []
+        else:
+            return self.manager.get_session_messages(session_id)
 
 
 class SimpleO3ProChatBot:
@@ -63,12 +197,15 @@ class SimpleO3ProChatBot:
             self.background_handler = BackgroundHandler(self.client)
             print("✅ 処理ハンドラー初期化完了")
             
-            # 履歴管理
-            self.history_manager = ChatHistoryManager()
-            self.current_session_id = self.history_manager.start_new_session(
-                self.current_mode, 
-                f"チャットセッション"
-            )
+            # 履歴管理初期化
+            self.history_manager = self._initialize_history_manager()
+            if self.history_manager:
+                self.current_session_id = self.history_manager.start_new_session(
+                    self.current_mode, 
+                    f"チャットセッション"
+                )
+            else:
+                print("⚠️ 履歴管理が無効です")
             print("✅ 履歴管理初期化完了")
             
             return True
@@ -162,6 +299,46 @@ class SimpleO3ProChatBot:
         
         print(f"✅ モード変更: {mode} (effort: {effort})")
         return True
+    
+    def _initialize_history_manager(self):
+        """履歴管理初期化（Cosmos DB優先、フォールバック対応）"""
+        # Cosmos DB環境変数チェック
+        import os
+        cosmos_endpoint = os.getenv("COSMOS_DB_ENDPOINT")
+        
+        if COSMOS_AVAILABLE and cosmos_endpoint:
+            try:
+                print("🔍 Cosmos DB履歴管理を初期化中...")
+                from dotenv import load_dotenv
+                
+                # .env.cosmosファイルを読み込み
+                if Path(".env.cosmos").exists():
+                    load_dotenv(".env.cosmos")
+                    print("✅ .env.cosmos設定読み込み完了")
+                
+                # Cosmos DB設定
+                cosmos_config = load_config_from_env()
+                cosmos_client = CosmosDBClient(cosmos_config.cosmos_db)
+                
+                # 非同期チェックは省略し、直接作成
+                cosmos_manager = CosmosHistoryManager(cosmos_client, "default_tenant", cosmos_config)
+                wrapper = HistoryManagerWrapper(cosmos_manager, is_cosmos=True)
+                print("✅ Cosmos DB履歴管理初期化完了")
+                return wrapper
+                
+            except Exception as e:
+                print(f"⚠️ Cosmos DB初期化失敗: {e}")
+                print("📂 ローカル履歴管理にフォールバック")
+        
+        # ローカル履歴管理にフォールバック
+        try:
+            local_manager = ChatHistoryManager()
+            wrapper = HistoryManagerWrapper(local_manager, is_cosmos=False)
+            print("✅ ローカル履歴管理初期化完了")
+            return wrapper
+        except Exception as e:
+            print(f"❌ ローカル履歴管理初期化失敗: {e}")
+            return None
     
     def show_help(self):
         """ヘルプ表示"""
