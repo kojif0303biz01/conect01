@@ -76,12 +76,14 @@ class StreamingHandler:
             full_response = ""
             chunk_count = 0
             
-            for chunk in stream:
+            for event in stream:
                 chunk_count += 1
-                if hasattr(chunk, 'output_text'):
-                    chunk_text = chunk.output_text
-                    print(chunk_text, end='', flush=True)
-                    full_response += chunk_text
+                # o3-proのストリーミングAPIはイベントベース
+                if event.type == "response.output_text.delta":
+                    if hasattr(event, 'delta'):
+                        chunk_text = event.delta
+                        print(chunk_text, end='', flush=True)
+                        full_response += chunk_text
             
             duration = time.time() - start_time
             
@@ -131,9 +133,6 @@ class StreamingHandler:
             }
         
         try:
-            print(f"\n=== コールバック付きストリーミング開始 ({effort}レベル) ===")
-            print(f"質問: {question}")
-            
             start_time = time.time()
             
             stream = self.client.client.responses.create(
@@ -146,21 +145,21 @@ class StreamingHandler:
             full_response = ""
             chunk_count = 0
             
-            for chunk in stream:
+            for event in stream:
                 chunk_count += 1
-                if hasattr(chunk, 'output_text'):
-                    chunk_text = chunk.output_text
-                    full_response += chunk_text
-                    
-                    # コールバック実行
-                    try:
-                        on_chunk(chunk_text)
-                    except Exception as callback_error:
-                        print(f"\nWARN コールバックエラー: {callback_error}")
+                # o3-proのストリーミングAPIはイベントベース
+                if event.type == "response.output_text.delta":
+                    if hasattr(event, 'delta'):
+                        chunk_text = event.delta
+                        full_response += chunk_text
+                        
+                        # コールバック実行
+                        try:
+                            on_chunk(chunk_text)
+                        except Exception as callback_error:
+                            print(f"\nWARN コールバックエラー: {callback_error}")
             
             duration = time.time() - start_time
-            
-            print(f"\nOK コールバック付きストリーミング成功（チャンク数: {chunk_count}、実行時間: {duration:.1f}秒）")
             
             return {
                 "success": True,
@@ -173,7 +172,6 @@ class StreamingHandler:
             
         except Exception as e:
             error_msg = f"コールバック付きストリーミング失敗: {e}"
-            print(f"NG {error_msg}")
             return {
                 "success": False,
                 "error": error_msg,
@@ -204,9 +202,11 @@ class StreamingHandler:
                 stream=True
             )
             
-            for chunk in stream:
-                if hasattr(chunk, 'output_text'):
-                    yield chunk.output_text
+            for event in stream:
+                # o3-proのストリーミングAPIはイベントベース
+                if event.type == "response.output_text.delta":
+                    if hasattr(event, 'delta'):
+                        yield event.delta
                     
         except Exception as e:
             yield f"ERROR: ストリーミング失敗: {e}"

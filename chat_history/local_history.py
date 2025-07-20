@@ -162,8 +162,7 @@ class ChatHistoryManager:
             with open(session_file, 'r', encoding='utf-8') as f:
                 session_data = json.load(f)
             return session_data.get("messages", [])
-        except Exception as e:
-            print(f"メッセージ読み込みエラー: {e}")
+        except Exception:
             return []
     
     def get_session_info(self, session_id: str) -> Optional[Dict]:

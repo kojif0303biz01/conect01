@@ -199,8 +199,12 @@ python simple_chatbot.py
 [reasoning/low] > こんにちは
 [reasoning/low] > /mode streaming high
 [streaming/high] > 複雑な質問を聞かせてください
-[streaming/high] > /history
-[streaming/high] > /quit
+[streaming/high] > /mode background high
+[background/high] > 長時間の分析タスクをお願いします
+[background/high] > /job list
+[background/high] > /job status resp_abc123...
+[background/high] > /job result resp_abc123...
+[background/high] > /quit
 ```
 
 ### 2. プログラムから直接使用
@@ -324,5 +328,10 @@ python api_connection_test.py >> test_results.log 2>&1
 **対応API**: Azure OpenAI 2025-04-01-preview  
 **o3-proモデル**: 全機能対応（基本推論・ストリーミング・バックグラウンド）
 
-resoning モード、動作はOKだが、回答が2回表示されている？デバッグ情報がでている？
-streamモード、回答が表示されない。
+## 📢 更新情報 (2025-07-20)
+
+### ✅ デバッグ修正完了
+- **reasoningモード**: デバッグ出力を削除し、回答が1回だけ表示されるよう修正
+- **streamingモード**: o3-proの新しいイベントベースストリーミングAPIに対応（`response.output_text.delta`イベント処理を実装）
+- **backgroundモード**: simple_chatbot.pyに統合完了、ジョブ管理コマンド（/job list, status, result, cancel）を追加
+- 全3モードとも正常動作を確認済み

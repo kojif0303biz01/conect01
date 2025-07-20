@@ -68,10 +68,6 @@ class BackgroundHandler:
             }
         
         try:
-            print(f"\n=== バックグラウンドタスク開始 ({effort}レベル) ===")
-            print(f"タスク: {question}")
-            print("バックグラウンド処理を開始中...")
-            
             # バックグラウンド処理リクエスト作成
             request_params = {
                 "model": self.deployment,
@@ -98,8 +94,6 @@ class BackgroundHandler:
             
             self.active_jobs[response.id] = job_info
             
-            print(f"OK バックグラウンドタスク開始成功（ジョブID: {response.id}）")
-            
             return {
                 "success": True,
                 "job_id": response.id,
@@ -111,7 +105,6 @@ class BackgroundHandler:
             
         except Exception as e:
             error_msg = f"バックグラウンドタスク開始失敗: {e}"
-            print(f"NG {error_msg}")
             return {
                 "success": False,
                 "error": error_msg,
@@ -164,13 +157,10 @@ class BackgroundHandler:
             if hasattr(status_response, 'error') and status_response.error:
                 status_result["error"] = status_response.error
             
-            print(f"ジョブ {job_id} ステータス: {status_response.status} (経過時間: {elapsed_time:.1f}秒)")
-            
             return status_result
             
         except Exception as e:
             error_msg = f"ステータス確認失敗: {e}"
-            print(f"NG {error_msg}")
             return {
                 "success": False,
                 "error": error_msg,
@@ -222,14 +212,10 @@ class BackgroundHandler:
             if hasattr(result_response, 'reasoning'):
                 result["reasoning"] = result_response.reasoning
             
-            print(f"OK ジョブ {job_id} 結果取得成功（総実行時間: {total_time:.1f}秒）")
-            print(f"結果: {result_response.output_text[:200]}...")
-            
             return result
             
         except Exception as e:
             error_msg = f"結果取得失敗: {e}"
-            print(f"NG {error_msg}")
             return {
                 "success": False,
                 "error": error_msg,

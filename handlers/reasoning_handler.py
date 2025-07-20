@@ -54,9 +54,6 @@ class ReasoningHandler:
             }
         
         try:
-            print(f"\n=== 基本推論実行 ({effort}レベル) ===")
-            print(f"質問: {question}")
-            
             start_time = time.time()
             
             response = self.client.client.responses.create(
@@ -68,10 +65,6 @@ class ReasoningHandler:
             duration = time.time() - start_time
             result_text = response.output_text
             
-            print(f"回答: {result_text}")
-            print(f"実行時間: {duration:.1f}秒")
-            print("OK 基本推論成功")
-            
             return {
                 "success": True,
                 "response": result_text,
@@ -82,7 +75,6 @@ class ReasoningHandler:
             
         except Exception as e:
             error_msg = f"基本推論失敗: {e}"
-            print(f"NG {error_msg}")
             return {
                 "success": False,
                 "error": error_msg,

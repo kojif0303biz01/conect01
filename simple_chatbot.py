@@ -21,7 +21,7 @@ project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
 from core.azure_auth import O3ProConfig, O3ProClient
-from handlers import ReasoningHandler, StreamingHandler
+from handlers import ReasoningHandler, StreamingHandler, BackgroundHandler
 from chat_history import ChatHistoryManager
 
 
@@ -33,6 +33,7 @@ class SimpleO3ProChatBot:
         self.client = None
         self.reasoning_handler = None
         self.streaming_handler = None
+        self.background_handler = None
         self.history_manager = None
         self.current_session_id = None
         self.current_mode = "reasoning"
@@ -59,6 +60,7 @@ class SimpleO3ProChatBot:
             # ハンドラー初期化
             self.reasoning_handler = ReasoningHandler(self.client)
             self.streaming_handler = StreamingHandler(self.client)
+            self.background_handler = BackgroundHandler(self.client)
             print("✅ 処理ハンドラー初期化完了")
             
             # 履歴管理
@@ -92,7 +94,7 @@ class SimpleO3ProChatBot:
                     effort=self.current_effort
                 )
             elif self.current_mode == "streaming":
-                print("💬 ストリーミング応答:")
+                print("🤖 ", end='', flush=True)  # ストリーミング開始時のアイコン
                 
                 def stream_callback(chunk_text):
                     print(chunk_text, end='', flush=True)
@@ -102,14 +104,25 @@ class SimpleO3ProChatBot:
                     stream_callback,
                     effort=self.current_effort
                 )
+                print()  # ストリーミング終了後の改行
+            elif self.current_mode == "background":
+                print("🔄 バックグラウンド処理を開始...")
+                result = self.background_handler.start_background_task(
+                    user_input,
+                    effort=self.current_effort
+                )
+                if result["success"]:
+                    print(f"✅ ジョブ開始成功 (ID: {result['job_id']})")
+                    print("📋 ジョブステータス確認: /job status <job_id>")
+                    print("📋 結果取得: /job result <job_id>")
             else:
                 result = {
                     "success": False,
                     "error": f"未対応モード: {self.current_mode}"
                 }
             
-            # アシスタント応答を履歴に保存
-            if result["success"]:
+            # アシスタント応答を履歴に保存（backgroundモード以外）
+            if result["success"] and self.current_mode != "background":
                 metadata = {
                     "mode": self.current_mode,
                     "effort": self.current_effort,
@@ -133,7 +146,7 @@ class SimpleO3ProChatBot:
     
     def set_mode(self, mode: str, effort: str = "low") -> bool:
         """モード変更"""
-        valid_modes = ["reasoning", "streaming"]
+        valid_modes = ["reasoning", "streaming", "background"]
         valid_efforts = ["low", "medium", "high"]
         
         if mode not in valid_modes:
@@ -163,10 +176,17 @@ class SimpleO3ProChatBot:
 モード切り替え:
   /mode reasoning [effort]  - 基本推論モード (effort: low/medium/high)
   /mode streaming [effort]  - ストリーミングモード
+  /mode background [effort] - バックグラウンド処理モード
   
 セッション:
   /new [タイトル]  - 新セッション開始
   /history        - 履歴表示
+  
+バックグラウンドジョブ:
+  /job list       - アクティブジョブ一覧
+  /job status <id> - ジョブステータス確認
+  /job result <id> - ジョブ結果取得
+  /job cancel <id> - ジョブキャンセル
 
 使用例:
   /mode reasoning high     - 高精度推論モード
@@ -203,8 +223,10 @@ class SimpleO3ProChatBot:
         for msg in messages[-5:]:  # 最新5件のみ表示
             role = "👤" if msg["role"] == "user" else "🤖"
             content = msg["content"]
-            if len(content) > 80:
-                content = content[:80] + "..."
+            # 確実に文字制限を適用
+            content = content.replace('\n', ' ')  # 改行を除去
+            if len(content) > 60:
+                content = content[:60] + "..."
             
             timestamp = msg["timestamp"][:19]
             print(f"{role} [{timestamp}] {content}")
@@ -220,6 +242,90 @@ class SimpleO3ProChatBot:
             title
         )
         print(f"✅ 新セッション開始: {title}")
+    
+    def show_jobs(self):
+        """アクティブジョブ一覧表示"""
+        if not self.background_handler:
+            print("❌ バックグラウンドハンドラーが初期化されていません")
+            return
+        
+        jobs = self.background_handler.list_active_jobs()
+        if not jobs:
+            print("📋 アクティブなジョブはありません")
+            return
+        
+        print(f"\n=== アクティブジョブ一覧 ({len(jobs)}件) ===")
+        for job in jobs:
+            print(f"🔄 {job['job_id'][:8]}... | {job['status']} | {job['effort']} | {job['elapsed_time']:.1f}s")
+            print(f"   質問: {job['question'][:60]}...")
+        print()
+    
+    def show_job_status(self, job_id: str):
+        """ジョブステータス表示"""
+        if not self.background_handler:
+            print("❌ バックグラウンドハンドラーが初期化されていません")
+            return
+        
+        print(f"🔍 ジョブステータス確認中: {job_id}")
+        status = self.background_handler.check_status(job_id)
+        
+        if status["success"]:
+            print(f"📊 ステータス: {status['status']}")
+            print(f"⏱️  経過時間: {status['elapsed_time']:.1f}秒")
+            print(f"🎯 Effort: {status['effort']}")
+            print(f"❓ 質問: {status['question']}")
+        else:
+            print(f"❌ エラー: {status['error']}")
+    
+    def get_job_result(self, job_id: str):
+        """ジョブ結果取得"""
+        if not self.background_handler:
+            print("❌ バックグラウンドハンドラーが初期化されていません")
+            return
+        
+        print(f"📥 ジョブ結果取得中: {job_id}")
+        result = self.background_handler.get_result(job_id)
+        
+        if result["success"]:
+            print(f"🤖 {result['response']}")
+            print(f"\n⏱️  総実行時間: {result['total_time']:.1f}秒")
+            
+            # 履歴に保存
+            if self.current_session_id:
+                metadata = {
+                    "mode": "background",
+                    "effort": result["effort"],
+                    "duration": result["total_time"],
+                    "job_id": job_id
+                }
+                
+                self.history_manager.add_message(
+                    self.current_session_id,
+                    "user", 
+                    result["question"]
+                )
+                self.history_manager.add_message(
+                    self.current_session_id,
+                    "assistant", 
+                    result["response"],
+                    metadata
+                )
+        else:
+            print(f"❌ エラー: {result['error']}")
+    
+    def cancel_job(self, job_id: str):
+        """ジョブキャンセル"""
+        if not self.background_handler:
+            print("❌ バックグラウンドハンドラーが初期化されていません")
+            return
+        
+        print(f"🚫 ジョブキャンセル中: {job_id}")
+        result = self.background_handler.cancel_job(job_id)
+        
+        if result["success"]:
+            print(f"✅ {result['message']}")
+        else:
+            print(f"❌ エラー: {result['error']}")
 
 
 def main():
@@ -270,7 +376,25 @@ def main():
                         effort = parts[2] if len(parts) >= 3 else "low"
                         chatbot.set_mode(mode, effort)
                     else:
-                        print("使用方法: /mode <reasoning|streaming> [effort]")
+                        print("使用方法: /mode <reasoning|streaming|background> [effort]")
+                elif command == 'job':
+                    if len(parts) >= 2:
+                        sub_command = parts[1]
+                        if sub_command == 'list':
+                            chatbot.show_jobs()
+                        elif sub_command == 'status' and len(parts) >= 3:
+                            job_id = parts[2]
+                            chatbot.show_job_status(job_id)
+                        elif sub_command == 'result' and len(parts) >= 3:
+                            job_id = parts[2]
+                            chatbot.get_job_result(job_id)
+                        elif sub_command == 'cancel' and len(parts) >= 3:
+                            job_id = parts[2]
+                            chatbot.cancel_job(job_id)
+                        else:
+                            print("使用方法: /job <list|status|result|cancel> [job_id]")
+                    else:
+                        print("使用方法: /job <list|status|result|cancel> [job_id]")
                 else:
                     print(f"未知のコマンド: {command}. /help で確認してください")
                 
@@ -282,12 +406,14 @@ def main():
             result = chatbot.process_message(user_input)
             
             if result["success"]:
-                # ストリーミング以外は結果表示
-                if chatbot.current_mode != "streaming":
+                # ストリーミングとバックグラウンド以外は結果表示
+                if chatbot.current_mode not in ["streaming", "background"]:
                     print(f"🤖 {result['response']}")
                 
-                duration = result.get("duration", 0)
-                print(f"\n⏱️  実行時間: {duration:.1f}秒")
+                # backgroundモード以外は実行時間表示
+                if chatbot.current_mode != "background":
+                    duration = result.get("duration", 0)
+                    print(f"\n⏱️  実行時間: {duration:.1f}秒")
             else:
                 print(f"❌ エラー: {result['error']}")
             
