@@ -20,7 +20,8 @@
       "Bash(pip --version)",
       "Bash(touch:*)",
       "Bash(chmod:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }
